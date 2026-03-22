@@ -10,4 +10,4 @@ RUN poetry install
 
 ENV PYTHONPATH=src
 
-CMD ["uvicorn", "todo_list.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.todo_list.main:app", "--host", "0.0.0.0", "--port", "8000"]
