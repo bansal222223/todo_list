@@ -28,6 +28,9 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql://postgres:admin@localhost:5432/todo_test_db
       DATABASE_URL: postgresql://postgres:admin@localhost:5432/todo_db
+      # ✅ Yeh add karo
+      SECRET_KEY: 477cb50242b8068ff9885239f2bc7e8fcbcf7ab271c90edbc7ea4e0f0b933b42
+      ALGORITHM: HS256
 
     steps:
       - name: Checkout code
