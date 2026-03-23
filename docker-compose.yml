@@ -1,6 +1,3 @@
-
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -13,20 +10,23 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     command: uvicorn src.todo_list.main:app --host 0.0.0.0 --port 8000 --reload
-              
-               
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     env_file:
       - .env
 
 volumes:
   postgres_data:
-  

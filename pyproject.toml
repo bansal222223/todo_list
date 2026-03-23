@@ -20,6 +20,7 @@ dependencies = [
     "dotenv (>=0.9.9,<0.10.0)",
     "alembic (>=1.18.4,<2.0.0)",
     "bcrypt (==4.0.1)",
+    "redis (>=7.3.0,<8.0.0)",
 ]
 
 [tool.poetry]
