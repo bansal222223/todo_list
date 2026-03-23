@@ -1,7 +1,9 @@
+from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 from . import repository, auth
 from . import models, schemas
 import json
-from todo_list.redis_client import redis_client  # ← Redis import karo
+from todo_list.redis_client import redis_client
 
 
 def register_user_service(db, user):
@@ -11,7 +13,11 @@ def register_user_service(db, user):
         "password": hashed,
         "role": user.role
     }
-    return repository.create_user(db, user_data)
+    try:
+        return repository.create_user(db, user_data)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Username already exists")
 
 
 def send_otp_service(username):
@@ -31,30 +37,24 @@ def verify_otp_service(db, username, otp):
 def create_task_service(db, task, current_user):
     if current_user["role"] not in ["admin", "manager", "user"]:
         raise Exception("Not allowed to create task")
-    
+
     new_task = repository.create_task(db, task)
-    
-    # ⚠️ Naya task bana — purana cache delete karo
+
     redis_client.delete("tasks:all")
-    
+
     return new_task
 
 
 def get_tasks_service(db, current_user):
-    
-    
     cached = redis_client.get("tasks:all")
-    
+
     if cached:
-       
         print("✅ Redis se mila!")
-        return json.loads(cached)  
-    
-    
+        return json.loads(cached)
+
     print("🔄 DB se le raha hun...")
     tasks = repository.get_tasks(db)
-    
-  
+
     tasks_data = [
         {
             "id": task.id,
@@ -65,24 +65,19 @@ def get_tasks_service(db, current_user):
         }
         for task in tasks
     ]
-    
-    
-    redis_client.setex(
-        "tasks:all",        # ← Key
-        300,                # ← 5 minutes
-        json.dumps(tasks_data)  # Python List → String
-    )
-    
-    return tasks_data
 
+    redis_client.setex(
+        "tasks:all",
+        300,
+        json.dumps(tasks_data)
+    )
+
+    return tasks_data
 
 def delete_task_service(db, task_id, current_user):
     if current_user["role"] != "admin":
-        raise Exception("Only admin can delete")
-    
+        raise HTTPException(status_code=403, detail="Only admin can delete")  # ← HTTPException
+
     result = repository.delete_task(db, task_id)
-    
-    
     redis_client.delete("tasks:all")
-    
     return result
