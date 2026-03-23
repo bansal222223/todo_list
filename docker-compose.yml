@@ -28,5 +28,27 @@ services:
     env_file:
       - .env
 
+  celery_worker:
+    build: .
+    command: celery -A src.todo_list.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+
+  celery_beat:
+    build: .
+    command: celery -A src.todo_list.celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env
+
 volumes:
   postgres_data:
