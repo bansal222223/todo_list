@@ -17,7 +17,7 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-# ✅ Yeh add karo
+
 def get_db():
     db = SessionLocal()
     try:

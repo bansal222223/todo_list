@@ -12,7 +12,7 @@ celery_app = Celery(
 )
 
 celery_app.conf.beat_schedule = {
-    # Har Somwar subah 9 baje report generate karo
+   
     "weekly-progress-report": {
         "task": "src.todo_list.tasks.weekly_progress_report",
         "schedule": crontab(
