@@ -18,9 +18,9 @@ celery_app.conf.beat_schedule = {
         "schedule": crontab(
             hour=9,
             minute=0,
-            day_of_week=1  # ← 1 = Monday
+            day_of_week=1  
         ),
     },
 }
 
-celery_app.conf.timezone = "Asia/Kolkata"  # ← Indian time
+celery_app.conf.timezone = "Asia/Kolkata"  
