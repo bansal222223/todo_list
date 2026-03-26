@@ -24,12 +24,7 @@ def register_user_service(db, user):
 
 # 📩 Send OTP
 def send_otp_service(username):
-    print("👉 send_otp_service called", flush=True)
-
-    otp = auth.generate_otp(username)
-
-    print("👉 OTP generated:", otp, flush=True)
-
+    auth.generate_otp(username)
     return {"msg": "OTP sent"}
 
 
@@ -47,7 +42,8 @@ def verify_otp_service(db, username, otp):
 
     token = auth.create_token({
         "sub": user.username,
-        "role": user.role
+        "role": user.role,
+        "id": user.id
     })
 
     return token
@@ -55,63 +51,86 @@ def verify_otp_service(db, username, otp):
 
 # ➕ Create Task
 def create_task_service(db, task, current_user):
-    if current_user["role"] not in ["admin", "manager", "user"]:
-        raise HTTPException(status_code=403, detail="Not allowed")
+    new_task = repository.create_task(db, task, current_user["id"])
 
-    new_task = repository.create_task(db, task)
-
-    try:
-        redis_client.delete("tasks:all")
-    except Exception as e:
-        print("Redis error:", e)
+    # 🔥 clear cache
+    for key in redis_client.scan_iter("tasks:*"):
+        redis_client.delete(key)
 
     return new_task
 
 
-# 📖 Get Tasks
-def get_tasks_service(db, current_user):
+# 📖 Get Tasks (PAGINATION + CACHE)
+def get_tasks_service(db, current_user, skip: int = 0, limit: int = 10):
+    cache_key = f"tasks:{skip}:{limit}"
+    redis_client.flushall()
+    print("redis cleared")
+
     try:
-        cached = redis_client.get("tasks:all")
+        cached = redis_client.get(cache_key)
     except Exception:
         cached = None
 
     if cached:
-        print("✅ Redis se mila!")
+        print("✅ Redis cache hit")
         return json.loads(cached)
 
-    print("🔄 DB se le raha hun...")
+    print("🔄 DB call")
 
-    tasks = repository.get_tasks(db)
+    tasks = repository.get_tasks(db, skip, limit)
 
     tasks_data = [
         {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "completed": task.completed,
-            "owner_id": task.owner_id
+            "id": t.id,
+            "title": t.title,
+            "description": t.description,
+            "completed": t.completed,
+            "owner_id": t.owner_id
         }
-        for task in tasks
+        for t in tasks
     ]
 
     try:
-        redis_client.setex("tasks:all", 300, json.dumps(tasks_data))
+        redis_client.setex(cache_key, 300, json.dumps(tasks_data))
     except Exception as e:
         print("Redis error:", e)
 
     return tasks_data
 
 
+# 📄 Get Task by ID
+def get_task_by_id_service(db, task_id, current_user):
+    return repository.get_task_by_id(db, task_id)
+
+
 # ❌ Delete Task
 def delete_task_service(db, task_id, current_user):
-    if current_user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can delete")
+    result = repository.delete_task(
+        db,
+        task_id,
+        current_user["id"],
+        current_user["role"]
+    )
 
-    result = repository.delete_task(db, task_id)
+    # 🔥 clear cache
+    for key in redis_client.scan_iter("tasks:*"):
+        redis_client.delete(key)
 
-    try:
-        redis_client.delete("tasks:all")
-    except Exception as e:
-        print("Redis error:", e)
+    return result
 
-    return result 
+
+# ✏️ Update Task
+def update_task_service(db, task_id, task_data, current_user):
+    updated = repository.update_task(
+        db,
+        task_id,
+        task_data.dict(exclude_unset=True),
+        current_user["id"],
+        current_user["role"]
+    )
+
+    # 🔥 clear cache
+    for key in redis_client.scan_iter("tasks:*"):
+        redis_client.delete(key)
+
+    return updated

@@ -46,3 +46,8 @@ class TaskResponse(BaseModel):
 
 class TaskListResponse(BaseModel):
     tasks: List[TaskResponse]
+    
+class TaskUpdate(BaseModel):
+        title: Optional[str] = None
+        description: Optional[str] = None
+        completed: Optional[bool] = None

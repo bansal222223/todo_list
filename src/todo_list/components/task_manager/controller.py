@@ -49,13 +49,7 @@ def create_task(
     return service.create_task_service(db, task, current_user)
 
 
-# 📖 Get Tasks
-@router.get("/tasks")
-def get_tasks(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
-):
-    return service.get_tasks_service(db, current_user)
+
 
 
 # ❌ Delete Task
@@ -66,3 +60,35 @@ def delete_task(
     current_user=Depends(get_current_user)
 ):
     return service.delete_task_service(db, task_id, current_user)
+
+
+# Task by ID
+@router.get("/tasks/{task_id}")
+def get_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return service.get_task_by_id_service(db, task_id, current_user)
+
+
+# Pagination wala get tasks
+@router.get("/tasks")
+def get_tasks(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return service.get_tasks_service(db, current_user, skip, limit)
+
+
+# Update task
+@router.put("/tasks/{task_id}")
+def update_task(
+    task_id: int,
+    task: schemas.TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    return service.update_task_service(db, task_id, task, current_user)
