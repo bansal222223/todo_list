@@ -18,19 +18,24 @@ def get_db():
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     token = credentials.credentials
-    print(f"TOKEN RECEIVED: {token}")       # ✅ debug
-    print(f"SECRET KEY: {SECRET_KEY}")      # ✅ debug
-    print(f"ALGORITHM: {ALGORITHM}")        # ✅ debug
+    print(f"TOKEN RECEIVED: {token}")
+    print(f"SECRET KEY: {SECRET_KEY}")    
+    print(f"ALGORITHM: {ALGORITHM}")        
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"PAYLOAD: {payload}")        # ✅ debug
+        print(f"PAYLOAD: {payload}")
+        
         username = payload.get("sub")
         role = payload.get("role")
+        user_id = payload.get("id")        
+
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return {"username": username, "role": role}
+
+        return {"sub": username, "role": role, "id": user_id}  
+
     except JWTError as e:
-        print(f"JWT ERROR: {e}")            # ✅ debug
+        print(f"JWT ERROR: {e}")
         raise HTTPException(status_code=401, detail="Token error")
 
 
