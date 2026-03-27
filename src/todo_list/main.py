@@ -8,7 +8,7 @@ from .database import Base, engine
 app = FastAPI()
 
 
-# ✅ FIX: startup event me daalo
+# ✅ ONLY RUN ON STARTUP
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
