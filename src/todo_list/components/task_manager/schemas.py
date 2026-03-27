@@ -10,6 +10,13 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
+
+# ✅ ADD THIS
+class OTPRequest(BaseModel):
+    username: str
+    otp: str
+
+
 class UserResponse(BaseModel):
     id: int
     username: str
@@ -18,21 +25,26 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
 
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
 
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
 
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
+
 
 class TaskResponse(BaseModel):
     id: int
@@ -44,10 +56,6 @@ class TaskResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class TaskListResponse(BaseModel):
     tasks: List[TaskResponse]
-    
-class TaskUpdate(BaseModel):
-        title: Optional[str] = None
-        description: Optional[str] = None
-        completed: Optional[bool] = None

@@ -17,18 +17,35 @@ engine = create_engine(TEST_DATABASE_URL)
 TestingSessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
-# ✅ Redis mock (GLOBAL — sab jagah apply hoga)
 @pytest.fixture(autouse=True)
 def mock_redis():
-    with mock.patch("todo_list.redis_client.redis_client") as mocked:
-        mocked.get.return_value = None
-        mocked.set.return_value = True
-        mocked.setex.return_value = True
-        mocked.delete.return_value = True
-        yield mocked
+    otp_store = {}
+
+    def mock_setex(key, ttl, value):
+        otp_store[key] = value
+        return True
+
+    def mock_get(key):
+        return otp_store.get(key)
+
+    def mock_delete(key):
+        otp_store.pop(key, None)
+        return True
+
+    with mock.patch("todo_list.components.task_manager.service.redis_client") as mock_service_redis, \
+         mock.patch("todo_list.components.task_manager.auth.redis_client") as mock_auth_redis:
+
+        mock_service_redis.get.return_value = None
+        mock_service_redis.setex.return_value = True
+        mock_service_redis.delete.return_value = True
+
+        mock_auth_redis.setex.side_effect = mock_setex
+        mock_auth_redis.get.side_effect = mock_get
+        mock_auth_redis.delete.side_effect = mock_delete
+
+        yield mock_service_redis
 
 
-# ✅ DB setup/teardown
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
@@ -45,87 +62,39 @@ def db_session(setup_db):
         session.close()
 
 
-# ✅ Test client with DB override
 @pytest.fixture
 def client(db_session):
     def override_get_db():
         try:
             yield db_session
         finally:
-            pass
-
+            db_session.close()
     app.dependency_overrides[get_db] = override_get_db
-
     with TestClient(app) as c:
         yield c
-
     app.dependency_overrides.clear()
 
 
-# ✅ Authenticated client (USER)
 @pytest.fixture
 def auth_client(client):
-    username = "testuser"
-
-    # register
     client.post("/register", json={
-        "username": username,
+        "username": "testuser",
         "password": "Test@1234"
     })
+    client.post("/send-otp", json={"username": "testuser"})
 
-    # send OTP
-    client.post("/send-otp", json={
-        "username": username
-    })
-
-    # mock OTP verification
+    # ✅ verify_otp directly mock karo
     with mock.patch(
         "todo_list.components.task_manager.auth.verify_otp",
         return_value=True
     ):
         res = client.post("/verify-otp", json={
-            "username": username,
-            "otp": "123456"
+            "username": "testuser", "otp": "123456"
         })
 
+    print(f"DEBUG VERIFY RES: {res.json()}")
     token = res.json().get("access_token")
-
-    # 🔥 important safety
-    assert token is not None
-
+    print(f"DEBUG TOKEN: {token}")
+    assert token is not None, f"Token None! Response: {res.json()}"
     client.headers.update({"Authorization": f"Bearer {token}"})
-
-    return client
-
-
-# ✅ Admin client (optional but useful)
-@pytest.fixture
-def admin_client(client):
-    username = "adminuser"
-
-    client.post("/register", json={
-        "username": username,
-        "password": "Admin@1234",
-        "role": "admin"
-    })
-
-    client.post("/send-otp", json={
-        "username": username
-    })
-
-    with mock.patch(
-        "todo_list.components.task_manager.auth.verify_otp",
-        return_value=True
-    ):
-        res = client.post("/verify-otp", json={
-            "username": username,
-            "otp": "123456"
-        })
-
-    token = res.json().get("access_token")
-
-    assert token is not None
-
-    client.headers.update({"Authorization": f"Bearer {token}"})
-
     return client

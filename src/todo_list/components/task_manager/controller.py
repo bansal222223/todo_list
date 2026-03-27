@@ -19,25 +19,33 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return service.register_user_service(db, user)
 
 
-# 📩 Send OTP (FIXED 🔥)
+# 🔐 Schemas
+class SendOTPRequest(BaseModel):
+    username: str
+
+class VerifyOTPRequest(BaseModel):
+    username: str
+    otp: str
+
+
+# 📩 Send OTP
 @router.post("/send-otp")
-def send_otp(data: OTPRequest):
+def send_otp(data: SendOTPRequest):
     print("🔥 CONTROLLER HIT", flush=True)
     return service.send_otp_service(data.username)
 
 
 # ✅ Verify OTP
 @router.post("/verify-otp")
-def verify_otp(data: OTPRequest, otp: str, db: Session = Depends(get_db)):
+def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
     print("🔥 VERIFY OTP HIT", flush=True)
 
-    token = service.verify_otp_service(db, data.username, otp)
+    token = service.verify_otp_service(db, data.username, data.otp)
 
     if not token:
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
     return {"access_token": token}
-
 
 # ➕ Create Task
 @router.post("/tasks")

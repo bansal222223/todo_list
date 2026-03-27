@@ -1,12 +1,12 @@
 import pytest
 from todo_list.components.task_manager import auth
+import unittest.mock as mock
 
 
 class TestRegister:
     def test_register_success(self, client):
         res = client.post("/register", json={
-            "username": "testuser",
-            "password": "Test@1234"
+            "username": "testuser", "password": "Test@1234"
         })
         assert res.status_code == 200
 
@@ -26,11 +26,16 @@ class TestOTP:
         client.post("/register", json={
             "username": "testuser", "password": "Test@1234"
         })
-        res = client.post("/send-otp?username=testuser")
+        # ✅ Body mein bhejo
+        res = client.post("/send-otp", json={"username": "testuser"})
         assert res.status_code == 200
 
     def test_verify_otp_invalid(self, client):
-        res = client.post("/verify-otp?username=testuser&otp=000000")
+        client.post("/register", json={
+            "username": "testuser", "password": "Test@1234"
+        })
+        # ✅ Dono body mein — galat OTP
+        res = client.post("/verify-otp", json={"username": "testuser", "otp": "000000"})
         assert res.status_code in [400, 404]
 
 
@@ -40,7 +45,6 @@ class TestProtectedRoute:
         assert res.status_code == 401
 
 
-# ✅ Auth unit tests — directly function test karo
 class TestAuthFunctions:
     def test_verify_password_success(self):
         hashed = auth.hash_password("Test@1234")
@@ -51,22 +55,19 @@ class TestAuthFunctions:
         assert auth.verify_password("WrongPass", hashed) == False
 
     def test_verify_otp_not_found(self):
-        # Username ka OTP store mein nahi hai
         result = auth.verify_otp("nonexistent_user", "123456")
         assert result == False
 
     def test_verify_otp_wrong_otp(self):
-        # OTP generate karo phir galat OTP dalo
         auth.generate_otp("testuser2")
         result = auth.verify_otp("testuser2", "000000")
         assert result == False
 
     def test_verify_otp_expired(self):
-        from datetime import datetime, timedelta
-        # Manually expired OTP store karo
-        auth.otp_store["expireduser"] = {
-            "otp": "123456",
-            "expiry": datetime.utcnow() - timedelta(minutes=10)  # Pehle se expired
-        }
-        result = auth.verify_otp("expireduser", "123456")
-        assert result == False
+        # ✅ Redis None return karo — expired simulate karo
+        with mock.patch(
+            "todo_list.components.task_manager.auth.redis_client"
+        ) as mock_r:
+            mock_r.get.return_value = None
+            result = auth.verify_otp("expireduser", "123456")
+            assert result == False
