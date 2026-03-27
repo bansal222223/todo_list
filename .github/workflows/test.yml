@@ -1,51 +1,25 @@
-name: Run Tests
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v3
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  - name: Setup Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: "3.12"
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
+  - name: Install Poetry
+    run: pip install poetry
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: admin
-          POSTGRES_DB: todo_test_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+  - name: Install dependencies
+    run: poetry install
 
-    env:
-      TEST_DATABASE_URL: postgresql://postgres:admin@localhost:5432/todo_test_db
-      DATABASE_URL: postgresql://postgres:admin@localhost:5432/todo_db
-      # ✅ Yeh add karo
-      SECRET_KEY: 477cb50242b8068ff9885239f2bc7e8fcbcf7ab271c90edbc7ea4e0f0b933b42
-      ALGORITHM: HS256
+  # 🔥 ADD THIS
+  - name: Wait for Postgres
+    run: |
+      until pg_isready -h localhost -p 5432; do
+        echo "Waiting for postgres..."
+        sleep 2
+      done
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      - name: Install Poetry
-        run: pip install poetry
-
-      - name: Install dependencies
-        run: poetry install
-
-      - name: Run tests
-        run: poetry run pytest --cov=src --cov-report=term-missing
+  - name: Run tests
+    run: poetry run pytest --cov=src --cov-report=term-missing

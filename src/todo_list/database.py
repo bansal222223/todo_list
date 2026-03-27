@@ -5,7 +5,8 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# ✅ FIX: test env handle karo
+DATABASE_URL = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 

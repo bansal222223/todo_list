@@ -7,8 +7,12 @@ from .database import Base, engine
 
 app = FastAPI()
 
-# 🔥 THIS IS IMPORTANT
-Base.metadata.create_all(bind=engine)
+
+# ✅ FIX: startup event me daalo
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(task_router)
+
 
 @app.get("/")
 def root():
