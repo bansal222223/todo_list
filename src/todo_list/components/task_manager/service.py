@@ -5,7 +5,7 @@ import json
 from todo_list.redis_client import redis_client
 
 
-# 🔐 Register user
+
 def register_user_service(db, user):
     hashed = auth.hash_password(user.password)
 
@@ -22,13 +22,13 @@ def register_user_service(db, user):
         raise HTTPException(status_code=400, detail="Username already exists")
 
 
-# 📩 Send OTP
+
 def send_otp_service(username):
     auth.generate_otp(username)
     return {"msg": "OTP sent"}
 
 
-# ✅ Verify OTP
+
 def verify_otp_service(db, username, otp):
     username = username.lower()
 
@@ -49,18 +49,17 @@ def verify_otp_service(db, username, otp):
     return token
 
 
-# ➕ Create Task
+
 def create_task_service(db, task, current_user):
     new_task = repository.create_task(db, task, current_user["id"])
 
-    # 🔥 clear cache
     for key in redis_client.scan_iter("tasks:*"):
         redis_client.delete(key)
 
     return new_task
 
 
-# 📖 Get Tasks (PAGINATION + CACHE)
+
 def get_tasks_service(db, current_user, skip: int = 0, limit: int = 10):
     cache_key = f"tasks:{skip}:{limit}"
     redis_client.flushall()
@@ -98,12 +97,12 @@ def get_tasks_service(db, current_user, skip: int = 0, limit: int = 10):
     return tasks_data
 
 
-# 📄 Get Task by ID
+
 def get_task_by_id_service(db, task_id, current_user):
     return repository.get_task_by_id(db, task_id)
 
 
-# ❌ Delete Task
+
 def delete_task_service(db, task_id, current_user):
     result = repository.delete_task(
         db,
@@ -112,14 +111,14 @@ def delete_task_service(db, task_id, current_user):
         current_user["role"]
     )
 
-    # 🔥 clear cache
+   
     for key in redis_client.scan_iter("tasks:*"):
         redis_client.delete(key)
 
     return result
 
 
-# ✏️ Update Task
+
 def update_task_service(db, task_id, task_data, current_user):
     updated = repository.update_task(
         db,
@@ -129,7 +128,7 @@ def update_task_service(db, task_id, task_data, current_user):
         current_user["role"]
     )
 
-    # 🔥 clear cache
+    
     for key in redis_client.scan_iter("tasks:*"):
         redis_client.delete(key)
 

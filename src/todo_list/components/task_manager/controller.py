@@ -8,18 +8,17 @@ from todo_list.components.task_manager.dependencies import get_db, get_current_u
 router = APIRouter()
 
 
-# 🔐 OTP Request Schema
+
 class OTPRequest(BaseModel):
     username: str
 
 
-# 🔐 Register
 @router.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return service.register_user_service(db, user)
 
 
-# 🔐 Schemas
+
 class SendOTPRequest(BaseModel):
     username: str
 
@@ -28,14 +27,13 @@ class VerifyOTPRequest(BaseModel):
     otp: str
 
 
-# 📩 Send OTP
+
 @router.post("/send-otp")
 def send_otp(data: SendOTPRequest):
     print("🔥 CONTROLLER HIT", flush=True)
     return service.send_otp_service(data.username)
 
 
-# ✅ Verify OTP
 @router.post("/verify-otp")
 def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
     print("🔥 VERIFY OTP HIT", flush=True)
@@ -47,7 +45,7 @@ def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
 
     return {"access_token": token}
 
-# ➕ Create Task
+
 @router.post("/tasks")
 def create_task(
     task: schemas.TaskCreate,
@@ -60,7 +58,7 @@ def create_task(
 
 
 
-# ❌ Delete Task
+
 @router.delete("/tasks/{task_id}")
 def delete_task(
     task_id: int,
@@ -70,7 +68,7 @@ def delete_task(
     return service.delete_task_service(db, task_id, current_user)
 
 
-# Task by ID
+
 @router.get("/tasks/{task_id}")
 def get_task(
     task_id: int,
@@ -80,7 +78,7 @@ def get_task(
     return service.get_task_by_id_service(db, task_id, current_user)
 
 
-# Pagination wala get tasks
+
 @router.get("/tasks")
 def get_tasks(
     skip: int = 0,
@@ -91,7 +89,7 @@ def get_tasks(
     return service.get_tasks_service(db, current_user, skip, limit)
 
 
-# Update task
+
 @router.put("/tasks/{task_id}")
 def update_task(
     task_id: int,

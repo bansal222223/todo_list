@@ -29,7 +29,7 @@ def delete_task(db: Session, task_id: int, owner_id: int, role: str):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # ✅ Admin ya owner dono delete kar sakte hain
+   
     if role != "admin" and task.owner_id != owner_id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -49,7 +49,6 @@ def get_tasks(db: Session, skip: int = 0, limit: int = 10):
     return db.query(Task).offset(skip).limit(limit).all()
 
 
-# Update task
 def update_task(db: Session, task_id: int, task_data: dict, owner_id: int, role: str):
     task = db.query(Task).filter(Task.id == task_id).first()
 

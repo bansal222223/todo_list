@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 from todo_list.database import SessionLocal
 from todo_list.components.task_manager.constants import SECRET_KEY, ALGORITHM
 
-# 🔥 IMPORTANT: auto_error=False
+
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -21,7 +21,7 @@ def get_db():
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ):
-    # 🔥 FIX: credentials check
+    
     if credentials is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 

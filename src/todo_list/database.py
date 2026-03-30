@@ -5,10 +5,9 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 load_dotenv()
 
-# ✅ FINAL FIX
 DATABASE_URL = (
-    os.getenv("TEST_DATABASE_URL") 
-    or os.getenv("DATABASE_URL")
+    os.getenv("DATABASE_URL")
+    or os.getenv("TEST_DATABASE_URL")
 )
 
 if not DATABASE_URL:

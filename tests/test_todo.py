@@ -35,7 +35,7 @@ class TestDeleteTodo:
         })
         client.post("/send-otp", json={"username": "adminuser"})
 
-        # ✅ verify_otp mock
+       
         with mock.patch(
             "todo_list.components.task_manager.auth.verify_otp",
             return_value=True

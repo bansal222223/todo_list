@@ -11,7 +11,7 @@ class UserLogin(BaseModel):
     password: str
 
 
-# ✅ ADD THIS
+
 class OTPRequest(BaseModel):
     username: str
     otp: str

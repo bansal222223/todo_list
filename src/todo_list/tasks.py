@@ -1,41 +1,54 @@
-# src/todo_list/tasks.py
+import logging
+import os
+from datetime import datetime, timedelta
 
 from src.todo_list.celery_app import celery_app
 from src.todo_list.database import SessionLocal
 from src.todo_list.components.task_manager import models
-from datetime import datetime, timedelta
+
+
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logger = logging.getLogger("celery_task")
+logger.setLevel(logging.INFO)
+
+if not logger.handlers:
+    file_handler = logging.FileHandler(os.path.join(LOG_DIR, "celery.log"))
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
 
 @celery_app.task
 def weekly_progress_report():
     db = SessionLocal()
     try:
-        # Is hafte ki date range
+        logger.info("Weekly report generation started")
+
         today = datetime.utcnow()
         week_start = today - timedelta(days=7)
 
-        # Is hafte ke saare tasks
         all_tasks = db.query(models.Task).all()
 
-        # Is hafte complete hue tasks
         completed_this_week = db.query(models.Task).filter(
             models.Task.completed == True,
             models.Task.created_at >= week_start
         ).all()
 
-        # Is hafte bane naye tasks
         new_this_week = db.query(models.Task).filter(
             models.Task.created_at >= week_start
         ).all()
 
-        # Abhi bhi incomplete tasks
         still_incomplete = db.query(models.Task).filter(
             models.Task.completed == False
         ).all()
 
-        # Har user ki performance
         user_performance = {}
+
         for task in all_tasks:
             owner_id = str(task.owner_id)
+
             if owner_id not in user_performance:
                 user_performance[owner_id] = {
                     "total": 0,
@@ -43,19 +56,24 @@ def weekly_progress_report():
                     "incomplete": 0,
                     "completion_rate": "0%"
                 }
+
             user_performance[owner_id]["total"] += 1
+
             if task.completed:
                 user_performance[owner_id]["completed"] += 1
             else:
                 user_performance[owner_id]["incomplete"] += 1
 
-        # Completion rate calculate karo
         for user_id, data in user_performance.items():
             if data["total"] > 0:
                 rate = (data["completed"] / data["total"]) * 100
                 data["completion_rate"] = f"{rate:.1f}%"
 
-        # Report banao
+        overall_rate = (
+            (len(completed_this_week) / len(new_this_week) * 100)
+            if new_this_week else 0
+        )
+
         report = {
             "report_date": today.strftime("%Y-%m-%d"),
             "week_start": week_start.strftime("%Y-%m-%d"),
@@ -65,31 +83,22 @@ def weekly_progress_report():
                 "new_this_week": len(new_this_week),
                 "completed_this_week": len(completed_this_week),
                 "still_incomplete": len(still_incomplete),
-                "overall_completion_rate": f"{(len(completed_this_week)/len(new_this_week)*100):.1f}%" if new_this_week else "0%"
+                "overall_completion_rate": f"{overall_rate:.1f}%"
             },
             "user_performance": user_performance
         }
 
-        # Print karo
-        print("=" * 50)
-        print("📊 WEEKLY PROGRESS REPORT")
-        print("=" * 50)
-        print(f"📅 Week: {report['week_start']} → {report['week_end']}")
-        print(f"📋 Total Tasks      : {report['summary']['total_tasks']}")
-        print(f"🆕 New This Week    : {report['summary']['new_this_week']}")
-        print(f"✅ Completed        : {report['summary']['completed_this_week']}")
-        print(f"❌ Still Incomplete : {report['summary']['still_incomplete']}")
-        print(f"🎯 Completion Rate  : {report['summary']['overall_completion_rate']}")
-        print("-" * 50)
-        print("👤 User Performance:")
+        logger.info("Weekly report generated successfully")
+        logger.info(f"Summary: {report['summary']}")
+
         for user_id, data in user_performance.items():
-            print(f"   User {user_id}:")
-            print(f"   ✅ Completed  : {data['completed']}")
-            print(f"   ❌ Incomplete : {data['incomplete']}")
-            print(f"   🎯 Rate       : {data['completion_rate']}")
-        print("=" * 50)
+            logger.info(f"User {user_id} -> {data}")
 
         return report
+
+    except Exception as e:
+        logger.error(f"Error generating weekly report: {str(e)}")
+        raise
 
     finally:
         db.close()

@@ -83,7 +83,7 @@ def auth_client(client):
     })
     client.post("/send-otp", json={"username": "testuser"})
 
-    # ✅ verify_otp directly mock karo
+    
     with mock.patch(
         "todo_list.components.task_manager.auth.verify_otp",
         return_value=True

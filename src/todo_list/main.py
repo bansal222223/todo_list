@@ -19,4 +19,4 @@ app.include_router(task_router)
 
 @app.get("/")
 def root():
-    return {"message": "Todo API is running 🚀"}
+    return {"message": "Todo API is running successfully!"}
