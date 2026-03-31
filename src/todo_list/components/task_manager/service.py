@@ -71,10 +71,10 @@ def get_tasks_service(db, current_user, skip: int = 0, limit: int = 10):
         cached = None
 
     if cached:
-        print("✅ Redis cache hit")
+        print(" Redis cache hit")
         return json.loads(cached)
 
-    print("🔄 DB call")
+    print(" DB call")
 
     tasks = repository.get_tasks(db, skip, limit)
 

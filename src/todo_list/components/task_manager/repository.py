@@ -45,7 +45,7 @@ def get_task_by_id(db: Session, task_id: int):
 
 
 def get_tasks(db: Session, skip: int = 0, limit: int = 10):
-    print("🔥 REPO SKIP:", skip, "LIMIT:", limit)
+    print(" REPO SKIP:", skip, "LIMIT:", limit)
     return db.query(Task).offset(skip).limit(limit).all()
 
 

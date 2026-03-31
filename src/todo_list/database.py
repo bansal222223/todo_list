@@ -11,7 +11,7 @@ DATABASE_URL = (
 )
 
 if not DATABASE_URL:
-    raise ValueError("Database URL not set ❌")
+    raise ValueError("Database URL not set ")
 
 engine = create_engine(DATABASE_URL)
 

@@ -30,13 +30,13 @@ class VerifyOTPRequest(BaseModel):
 
 @router.post("/send-otp")
 def send_otp(data: SendOTPRequest):
-    print("🔥 CONTROLLER HIT", flush=True)
+    print(" CONTROLLER HIT", flush=True)
     return service.send_otp_service(data.username)
 
 
 @router.post("/verify-otp")
 def verify_otp(data: VerifyOTPRequest, db: Session = Depends(get_db)):
-    print("🔥 VERIFY OTP HIT", flush=True)
+    print(" VERIFY OTP HIT", flush=True)
 
     token = service.verify_otp_service(db, data.username, data.otp)
 
