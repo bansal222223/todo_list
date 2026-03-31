@@ -60,6 +60,6 @@ jobs:
             sleep 2
           done
 
-      # 🚀 Run Tests
+      
       - name: Run tests
         run: poetry run pytest --cov=src --cov-report=term-missing
